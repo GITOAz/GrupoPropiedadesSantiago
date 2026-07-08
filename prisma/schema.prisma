@@ -1,0 +1,110 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum PropertyType {
+  casa_nueva
+  casa_usada
+  depto_nuevo
+  depto_usado
+  bodega
+  estacionamiento
+}
+
+enum PropertyStatus {
+  disponible
+  reservada
+  vendida
+}
+
+enum FranjaHoraria {
+  manana
+  tarde
+}
+
+enum ContactStatus {
+  enviado
+  error_envio
+}
+
+model Admin {
+  id           String   @id @default(cuid())
+  nombre       String
+  email        String   @unique
+  passwordHash String
+  createdAt    DateTime @default(now())
+}
+
+model Property {
+  id          String         @id @default(cuid())
+  tipo        PropertyType
+  titulo      String
+  descripcion String
+  direccion   String
+  comuna      String
+  region      String
+  precio      Int
+  estado      PropertyStatus @default(disponible)
+
+  imagenes PropertyImage[]
+  videos   PropertyVideo[]
+  contactos ContactRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([tipo])
+  @@index([estado])
+  @@index([comuna])
+}
+
+model PropertyImage {
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  url        String
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+}
+
+model PropertyVideo {
+  id         String   @id @default(cuid())
+  property   Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId String
+  url        String
+  orden      Int      @default(0)
+  createdAt  DateTime @default(now())
+
+  @@index([propertyId])
+}
+
+// Registro local de cada envío de contacto, además del envío a la
+// Google Sheet vía Apps Script (fuente de verdad del flujo de aprobación).
+model ContactRequest {
+  id             String        @id @default(cuid())
+  property       Property      @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  propertyId     String
+  nombreCompleto String
+  email          String
+  whatsappCodigo String
+  whatsappNumero String
+  comentario     String?
+  fechaVisita    DateTime
+  franjaHoraria  FranjaHoraria
+  status         ContactStatus @default(enviado)
+  createdAt      DateTime      @default(now())
+
+  @@index([propertyId])
+}
